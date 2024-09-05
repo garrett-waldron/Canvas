@@ -10,6 +10,7 @@ canvas {
 </style>
 </head>
 <body onload="startGame()">
+<button onClick>
 <script>
 
 var myGamePiece;
