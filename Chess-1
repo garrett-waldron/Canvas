@@ -1,51 +1,33 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fabric.js Chessboard with Moveable Pieces</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    <style>
-        canvas {
-            border: 1px solid #000;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chessboard with Piece Images</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.10.3/babel.min.js" crossorigin></script>
 </head>
 <body>
-    <canvas id="canvas" width="400" height="400"></canvas>
-    <script>
-        // Initialize Fabric.js canvas
-        const canvas = new fabric.Canvas('canvas');
+  <div id="root"></div>
 
-        // Size of each square
-        const squareSize = 50;
+  <script type="text/babel" data-presets="react,stage-3">
+    // Model: Starting state of the chessboard in 2D array
+    const initialGameState = [
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+    ];
 
-        // Chess piece colors and turn handling
-        let turn = 'white'; // White goes first
-
-        // Create the chessboard
-        function createChessboard() {
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    const isLightSquare = (row + col) % 2 === 0;
-                    const square = new fabric.Rect({
-                        left: col * squareSize,
-                        top: row * squareSize,
-                        fill: isLightSquare ? '#eee' : '#8B4513', // Dark brown for dark squares
-                        width: squareSize,
-                        height: squareSize,
-                        selectable: false
-                    });
-                    canvas.add(square);
-                }
-            }
-        }
-
-        // Load SVG pieces onto the chessboard
-        function addPieces() {
-            const pieces = {
-                
+    // Mapping of chess pieces to their respective image URLs
+    const pieceImages = {
       'r': 'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
       'n': 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
       'b': 'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
@@ -60,67 +42,85 @@
       'P': 'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg'
     };
 
-            const boardState = [
-                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                ['.', '.', '.', '.', '.', '.', '.', '.'],
-                ['.', '.', '.', '.', '.', '.', '.', '.'],
-                ['.', '.', '.', '.', '.', '.', '.', '.'],
-                ['.', '.', '.', '.', '.', '.', '.', '.'],
-                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-            ];
+    function Game() {
+      const [game, setGame] = React.useState(initialGameState);
+      const [selectedSquare, setSelectedSquare] = React.useState(null);
 
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    const piece = boardState[row][col];
-                    if (piece !== '.') {
-                        // Load the SVG piece
-                        fabric.loadSVGFromURL(pieces[piece], function(objects, options) {
-                            const svgPiece = fabric.util.groupSVGElements(objects, options);
-                            svgPiece.set({
-                                left: col * squareSize + squareSize / 2,
-                                top: row * squareSize + squareSize / 2,
-                                originX: 'center',
-                                originY: 'center',
-                                hasControls: false,
-                                selectable: true, // Pieces are selectable
-                                pieceColor: piece === piece.toUpperCase() ? 'white' : 'black' // Track the piece color
-                            });
-                            svgPiece.on('mousedown', function() {
-                                if ((turn === 'white' && this.pieceColor === 'white') || 
-                                    (turn === 'black' && this.pieceColor === 'black')) {
-                                    this.set({ opacity: 0.5 });
-                                    canvas.setActiveObject(this);
-                                } else {
-                                    this.set({ selectable: false });
-                                }
-                            });
-                            svgPiece.on('mouseup', function() {
-                                if (canvas.getActiveObject() === this) {
-                                    this.set({ opacity: 1 });
-                                    turn = turn === 'white' ? 'black' : 'white'; // Switch turns
-                                }
-                            });
-                            canvas.add(svgPiece);
-                        });
-                    }
-                }
-            }
+      // Handle square click for moving pieces
+      function handleClick(row, col) {
+        if (selectedSquare) {
+          const newGame = game.map(row => row.slice());
+          const [selectedRow, selectedCol] = selectedSquare;
+
+          // Move the piece to the new location
+          newGame[row][col] = newGame[selectedRow][selectedCol];
+          newGame[selectedRow][selectedCol] = '';
+          setGame(newGame);
+          setSelectedSquare(null);
+        } else {
+          if (game[row][col]) {
+            setSelectedSquare([row, col]);
+          }
         }
+      }
 
-        // Initialize the chessboard and add the pieces
-        createChessboard();
-        addPieces();
+      return (
+        <div>
+          <Board game={game} onSquareClick={handleClick} selectedSquare={selectedSquare} />
+        </div>
+      );
+    }
 
-        // Enable piece dragging
-        canvas.on('object:moving', function(e) {
-            const obj = e.target;
-            obj.set({
-                left: Math.round(obj.left / squareSize) * squareSize + squareSize / 2,
-                top: Math.round(obj.top / squareSize) * squareSize + squareSize / 2
-            });
-        });
-    </script>
+    // View: Board and buttons reflecting the game state
+    function Board({ game, onSquareClick, selectedSquare }) {
+      return (
+        <div>
+          {game.map((row, rowIndex) => (
+            <div key={rowIndex} style={{ display: 'flex' }}>
+              {row.map((value, colIndex) => (
+                <Square
+                  key={colIndex}
+                  value={value}
+                  onClick={() => onSquareClick(rowIndex, colIndex)}
+                  isLight={(rowIndex + colIndex) % 2 === 0}
+                  isSelected={selectedSquare && selectedSquare[0] === rowIndex && selectedSquare[1] === colIndex}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function Square({ value, onClick, isLight, isSelected }) {
+      const squareStyle = {
+        width: '80px',
+        height: '80px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        cursor: 'pointer',
+        backgroundColor: isSelected ? '#ffeb3b' : (isLight ? '#f0d9b5' : '#b58863'),
+        border: '1px solid #999'
+      };
+
+      // Display the piece image or an empty square
+      const pieceDisplay = () => {
+        if (value) {
+          return <img src={pieceImages[value]} alt={value} style={{ width: '70px', height: '70px' }} />;
+        }
+        return null;
+      };
+
+      return (
+        <button style={squareStyle} onClick={onClick}>
+          {pieceDisplay()}
+        </button>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<Game />);
+  </script>
 </body>
 </html>
