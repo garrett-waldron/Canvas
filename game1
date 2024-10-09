@@ -20,11 +20,13 @@
     <p>How long can you stay alive?</p>
 
     <script>
+        let obstacleSpeed = 1;
         let myGamePiece;
         let myObstacles = [];
         let myScore;
         const jumpSound = new Audio('jump.mp3');
         const collideSound = new Audio('Collide.mp3');
+        collideSound.load();
 
         const myGameArea = {
             canvas: document.createElement("canvas"),
@@ -61,6 +63,26 @@
                 }
             });
         }
+
+
+    function Enemy(width, height, color, x, y) {
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.speedX = 0;
+        this.image = new Image();
+        this.image.src = 'aliens.png';
+
+    this.update = function() {
+        const ctx = myGameArea.context;
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    };
+
+    this.newPos = function() {
+        this.x += this.speedX; // Move the enemy
+    };
+}
 
         document.getElementById('PlayButton').addEventListener('click', startGame);
         document.getElementById('PauseButton').addEventListener('click', function() {
@@ -164,6 +186,11 @@
                 myObstacles[i].x += -1;
                 myObstacles[i].update();
             }
+            // obstacleSpeed = 1 + Math.floor(myGameArea.frameNo / 100);
+            // for (let i = 0; i < myObstacles.length; i++) {
+            //  myObstacles[i].x += -obstacleSpeed;
+            //  myObstacles[i].update();
+            
 
             myScore.text = "SCORE: " + myGameArea.frameNo;
             myScore.update();
